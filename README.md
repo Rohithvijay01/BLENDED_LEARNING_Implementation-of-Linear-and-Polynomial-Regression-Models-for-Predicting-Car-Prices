@@ -9,121 +9,83 @@ To write a program to predict car prices using Linear Regression and Polynomial 
 2. Anaconda – Python 3.7 Installation / Jupyter notebook
 
 ## Algorithm
-1. **Data Collection**:  
-   - Import essential libraries like pandas, numpy, sklearn, matplotlib, and seaborn.  
-   - Load the dataset using `pandas.read_csv()`.
 
-2. **Data Preprocessing**:  
-   - Address any missing values in the dataset.  
-   - Select key features for training the models.  
-   - Split the dataset into training and testing sets with `train_test_split()`.
-
-3. **Linear Regression**:  
-   - Initialize the Linear Regression model from sklearn.  
-   - Train the model on the training data using `.fit()`.  
-   - Make predictions on the test data using `.predict()`.  
-   - Evaluate model performance with metrics such as Mean Squared Error (MSE) and the R² score.
-
-4. **Polynomial Regression**:  
-   - Use `PolynomialFeatures` from sklearn to create polynomial features.  
-   - Fit a Linear Regression model to the transformed polynomial features.  
-   - Make predictions and evaluate performance similar to the linear regression model.
-
-5. **Visualization**:  
-   - Plot the regression lines for both Linear and Polynomial models.  
-   - Visualize residuals to assess model performance.
+1. Import the necessary libraries such as `pandas`, `sklearn`, `matplotlib`, and `numpy`.
+2. Load the dataset using `pandas.read_csv()` and display the first few rows to understand its structure.
+3. Select relevant features (`enginesize`, `horsepower`, `citympg`, `highwaympg`) as input variables (X) and `price` as the output variable (y).
+4. Split the dataset into training and testing sets using `train_test_split()`.
+5. Build a pipeline for Linear Regression with feature scaling (`StandardScaler`) and fit it on the training data.
+6. Predict car prices on the test set using the linear model and evaluate performance using metrics like MSE and R².
+7. Build a second pipeline for Polynomial Regression with degree 2, including scaling and the regression model.
+8. Fit the polynomial model on the training data and evaluate it similarly.
+9. Plot the actual vs predicted prices for both models to visually compare performance.
 
 ## Program:
-```
-/*
-Program to implement Linear and Polynomial Regression models for predicting car prices.
-Developed by: rohith v
-RegisterNumber: 212223040174
-*/
-# Import necessary libraries
-import numpy as np
+### Program to implement Linear and Polynomial Regression models for predicting car prices.
+### Developed by: ROHITH V
+### RegisterNumber: 212223040174
+```python
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
+from sklearn.preprocessing import PolynomialFeatures,StandardScaler
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error, r2_score
+import matplotlib.pyplot as plt
 
-# Load the dataset
-url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML240EN-SkillsNetwork/labs/data/CarPrice_Assignment.csv"
-data = pd.read_csv(url)
+df=pd.read_csv('encoded_car_data.csv')
+print(df.head())
 
-# Display first few rows
-print(data.head())
+x=df[['enginesize','horsepower','citympg','highwaympg']]
+y=df['price']
 
-# Select relevant features and target variable
-X = data[['enginesize']]  # Predictor
-y = data['price']         # Target
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+lr=Pipeline([
+    ('scaler',StandardScaler()),
+    ('model',LinearRegression())
+])
+lr.fit(x_train,y_train)
+y_pred_linear=lr.predict(x_test)
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+poly_model=Pipeline([
+    ('poly',PolynomialFeatures(degree=2)),
+    ('scaler',StandardScaler()),
+    ('model',LinearRegression())
+])
+poly_model.fit(x_train,y_train)
+y_pred_poly = poly_model.predict(x_test)
 
-# ---- Linear Regression ----
-# Initialize and train the linear regression model
-linear_model = LinearRegression()
-linear_model.fit(X_train, y_train)
+# Evaluate models
+print("Linear Regression:")
+print(f"MSE: {mean_squared_error(y_test, y_pred_linear):.2f}")
+print(f"R^2: {r2_score(y_test, y_pred_linear):.2f}")
 
-# Make predictions using the linear regression model
-y_pred_linear = linear_model.predict(X_test)
+print("\nPolynomial Regression:")
+print(f"MSE: {mean_squared_error(y_test, y_pred_poly):.2f}")
+print(f"R^2: {r2_score(y_test, y_pred_poly):.2f}")
 
-# Evaluate the linear regression model
-mse_linear = mean_squared_error(y_test, y_pred_linear)
-r2_linear = r2_score(y_test, y_pred_linear)
-
-print("Linear Regression MSE:", mse_linear)
-print("Linear Regression R^2 score:", r2_linear)
-
-# ---- Polynomial Regression ----
-# Transform the features for Polynomial Regression (degree = 2)
-poly = PolynomialFeatures(degree=2)
-X_train_poly = poly.fit_transform(X_train)
-X_test_poly = poly.transform(X_test)
-
-# Initialize and train the polynomial regression model
-poly_model = LinearRegression()
-poly_model.fit(X_train_poly, y_train)
-
-# Make predictions using the polynomial regression model
-y_pred_poly = poly_model.predict(X_test_poly)
-
-# Evaluate the polynomial regression model
-mse_poly = mean_squared_error(y_test, y_pred_poly)
-r2_poly = r2_score(y_test, y_pred_poly)
-
-print("Polynomial Regression MSE:", mse_poly)
-print("Polynomial Regression R^2 score:", r2_poly)
-
-# ---- Visualization ----
-# Plot the results for linear regression
-plt.scatter(X_test, y_test, color='red', label='Actual Prices')
-plt.plot(X_test, y_pred_linear, color='blue', label='Linear Regression')
-plt.title('Linear Regression for Predicting Car Prices')
-plt.xlabel('Engine Size')
-plt.ylabel('Price')
+# Plot actual vs predicted
+plt.figure(figsize=(10, 5))
+plt.scatter(y_test, y_pred_linear, label='Linear', alpha=0.6)
+plt.scatter(y_test, y_pred_poly, label='Polynomial (degree=2)', alpha=0.6)
+plt.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', label='Perfect Prediction')
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title("Linear vs Polynomial Regression")
 plt.legend()
 plt.show()
-
-# Plot the results for polynomial regression
-plt.scatter(X_test, y_test, color='red', label='Actual Prices')
-plt.plot(X_test, y_pred_poly, color='green', label='Polynomial Regression')
-plt.title('Polynomial Regression for Predicting Car Prices')
-plt.xlabel('Engine Size')
-plt.ylabel('Price')
-plt.legend()
-plt.show()
-
+*/
 ```
 
 ## Output:
-<img width="803" alt="Screenshot 2024-10-06 at 8 41 08 PM" src="https://github.com/user-attachments/assets/5c7f9995-1a09-4ef4-b512-40ae9f74fa05">
-<img width="803" alt="Screenshot 2024-10-06 at 8 46 12 PM" src="https://github.com/user-attachments/assets/25b34886-6c05-41ce-bac2-9b3f2f0b5b70">
-<img width="780" alt="Screenshot 2024-10-06 at 8 46 21 PM" src="https://github.com/user-attachments/assets/9eed5e90-e00a-460d-a2d5-d9d07d9910db">
+### PREVIEW OF THE DATASET:
+![Screenshot 2025-04-23 191906](https://github.com/user-attachments/assets/d9e28c9c-0a13-4631-8e36-a8150c6873d6)
 
+### MODEL PERFORMANCE:
+![Screenshot 2025-04-23 191923](https://github.com/user-attachments/assets/d6510cca-99b7-4e76-94aa-00b2c06cf066)
+
+### COMPARISION OF ACTUAL PRICES AND PREDICTED PRICES:
+![Screenshot 2025-04-23 191932](https://github.com/user-attachments/assets/b2cca655-ea9d-4f53-a09a-71cfa7092e3d)
 
 ## Result:
 Thus, the program to implement Linear and Polynomial Regression models for predicting car prices was written and verified using Python programming.
